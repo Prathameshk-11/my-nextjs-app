@@ -4,7 +4,7 @@ metadata:
   name: my-app-deployment
   namespace: nextjs
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: nextjs
@@ -14,13 +14,6 @@ spec:
         app: nextjs
     spec:
       containers:
-      - name: nextjs
-        image: your-dockerhub-username/nextjs-app:latest
-        ports:
-        - containerPort: 3000
-        env:
-        - name: DATABASE_URL
-          value: "bpostgresql://postgres:123456@localhost:5432/mydb"
       - name: postgres
         image: postgres:15
         ports:
@@ -42,8 +35,31 @@ spec:
               name: postgres-secret
               key: POSTGRES_DB
         volumeMounts:
-        - mountPath: /var/lib/postgresql/data
-          name: postgres-data
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+      - name: nextjs
+        image: prathamesh1115/nextjs:latest
+        
+        ports:
+        - containerPort: 3000
+        env:
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_DB
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: POSTGRES_DB
+        - name: DATABASE_URL
+          value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@localhost:5432/$(POSTGRES_DB)"
       volumes:
       - name: postgres-data
         emptyDir: {}
